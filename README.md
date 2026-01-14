@@ -35,36 +35,8 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-# Interactive mode (default)
 python JBScrape.py
-
-# Search eBay only
-python JBScrape.py --sites ebay
-
-# Search Swappa only
-python JBScrape.py --sites swappa
-
-# Show browser window (not headless)
-python JBScrape.py --no-headless
-
-# Create a note in macOS Notes app
-python JBScrape.py --note
-
-# Specify output file
-python JBScrape.py -o my_results.json
 ```
-
-## Options
-
-| Option | Description |
-|--------|-------------|
-| `--sites {ebay,swappa}` | Sites to search (default: both) |
-| `--pages N` | Pages to search per eBay query (default: 2) |
-| `--delay N` | Delay between requests in seconds (default: 1.5) |
-| `--no-headless` | Show browser window |
-| `--note` | Create note in macOS Notes app |
-| `-o, --output FILE` | Output JSON filename |
-| `-i, --interactive` | Force interactive mode |
 
 ## How It Works
 
