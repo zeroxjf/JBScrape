@@ -20,13 +20,13 @@ Searches for devices running **iOS 16.0-16.6.1** and **iOS 17.0**.
 ## Installation
 
 ```bash
-# Clone the repo
+# Clone the repo and enter the directory
 git clone https://github.com/zeroxjf/JBScrape.git
 cd JBScrape
 
-# Create virtual environment (recommended)
+# Create and activate virtual environment (recommended)
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
