@@ -4,9 +4,9 @@ JBScrape - iOS Jailbreak Device Finder
 Find iPhones with specific iOS versions on eBay and Swappa
 
 Usage:
-    python JBScrape.py                           # Interactive mode
-    python JBScrape.py --ios 16 17 --sites ebay  # Search iOS 16 & 17 on eBay
-    python JBScrape.py --ios 16.5 --sites swappa ebay --output results.json
+    python JBScrape.py                           # Interactive mode (eBay ~10 min, default)
+    python JBScrape.py --sites swappa            # Swappa only (slow ~20 min)
+    python JBScrape.py --sites ebay swappa       # Both sites (slow ~30 min)
 """
 
 from selenium import webdriver
@@ -607,7 +607,6 @@ class JBScraper:
 
         # Build HTML content
         lines = []
-        lines.append(f"<h1>{title}</h1>")
         lines.append(f"<p><b>{len(listings)} listings</b> | {datetime.now().strftime('%b %d, %Y %H:%M')}</p>")
         lines.append("<hr>")
 
@@ -686,18 +685,32 @@ def interactive_mode():
 
     # Get sites
     print("\nWhich sites do you want to search?")
-    print("  1. eBay only")
-    print("  2. Swappa only")
-    print("  3. Both (default)")
-    sites_input = input("Enter choice (1/2/3): ").strip() or "3"
+    print("  1. eBay only (~10 min) (default)")
+    print("  2. Swappa only (SLOW - ~20 minutes)")
+    print("  3. Both (SLOW - ~30 minutes)")
+    sites_input = input("Enter choice (1/2/3): ").strip() or "1"
 
     sites = []
     if sites_input == "1":
         sites = ['ebay']
     elif sites_input == "2":
-        sites = ['swappa']
+        print("\n  WARNING: Swappa search is slow (~20 minutes)")
+        print("  It visits each listing page individually to check iOS version.")
+        confirm = input("  Continue? (y/N): ").strip().lower()
+        if confirm != 'y':
+            print("  Falling back to eBay only.")
+            sites = ['ebay']
+        else:
+            sites = ['swappa']
     else:
-        sites = ['ebay', 'swappa']
+        print("\n  WARNING: Searching both sites is slow (~30 minutes)")
+        print("  Swappa visits each listing page individually to check iOS version.")
+        confirm = input("  Continue with both? (y/N): ").strip().lower()
+        if confirm != 'y':
+            print("  Falling back to eBay only.")
+            sites = ['ebay']
+        else:
+            sites = ['ebay', 'swappa']
 
     # Headless?
     print("\nShow browser window? (y/N): ", end="")
@@ -716,17 +729,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python JBScrape.py                    # Search both sites
-  python JBScrape.py --sites ebay       # eBay only
-  python JBScrape.py --sites swappa     # Swappa only
+  python JBScrape.py                    # Search eBay (~10 min, default)
+  python JBScrape.py --sites swappa     # Swappa only (slow ~20 min)
+  python JBScrape.py --sites ebay swappa  # Both sites (slow ~30 min)
   python JBScrape.py --no-headless      # Show browser
   python JBScrape.py --note             # Create Notes app entry
         """
     )
 
     parser.add_argument('--sites', nargs='+', choices=['ebay', 'swappa'],
-                        default=['ebay', 'swappa'],
-                        help='Sites to search (default: both)')
+                        default=['ebay'],
+                        help='Sites to search (default: ebay). Note: swappa is slow (~20 min)')
     parser.add_argument('--pages', type=int, default=2,
                         help='Pages to search per eBay query (default: 2)')
     parser.add_argument('--delay', type=float, default=1.5,
@@ -746,7 +759,7 @@ Examples:
     major_versions = [16, 17]
 
     # Interactive mode is default unless specific args are passed
-    has_args = args.sites != ['ebay', 'swappa'] or args.no_headless or args.note or args.output
+    has_args = args.sites != ['ebay'] or args.no_headless or args.note or args.output
 
     if args.interactive or not has_args:
         major_versions, sites, show_browser, create_note = interactive_mode()
