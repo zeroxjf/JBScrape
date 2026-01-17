@@ -34,6 +34,16 @@ class JBScraper:
         self.driver = None
         self.all_listings = []
 
+    def _fix_chromedriver_macos(self, driver_path):
+        """Remove macOS quarantine attribute that blocks chromedriver execution"""
+        if os.uname().sysname != 'Darwin':
+            return False
+        try:
+            subprocess.run(['xattr', '-cr', driver_path], check=True, capture_output=True)
+            return True
+        except Exception:
+            return False
+
     def _init_browser(self):
         """Initialize browser on demand"""
         if self.driver:
@@ -48,8 +58,44 @@ class JBScraper:
         chrome_options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36')
 
         print("Initializing browser...")
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+
+        # Try multiple driver sources in order of preference
+        driver_paths = []
+
+        # 1. System chromedriver (Homebrew on macOS)
+        for path in ['/opt/homebrew/bin/chromedriver', '/usr/local/bin/chromedriver']:
+            if os.path.exists(path):
+                driver_paths.append(path)
+
+        # 2. webdriver-manager
+        try:
+            driver_paths.append(ChromeDriverManager().install())
+        except Exception:
+            pass
+
+        last_error = None
+        for driver_path in driver_paths:
+            try:
+                service = Service(driver_path)
+                self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                return  # Success
+            except Exception as e:
+                last_error = e
+                # If macOS quarantine issue (exit code -9), try to fix it
+                if 'Status code was: -9' in str(e) or 'unexpectedly exited' in str(e):
+                    if self._fix_chromedriver_macos(driver_path):
+                        try:
+                            service = Service(driver_path)
+                            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                            return  # Success after fix
+                        except Exception as retry_error:
+                            last_error = retry_error
+
+        # All attempts failed
+        raise RuntimeError(
+            f"Failed to start chromedriver. Last error: {last_error}\n\n"
+            "On macOS, try: brew install --cask chromedriver && xattr -cr /opt/homebrew/bin/chromedriver"
+        )
 
     def close(self):
         """Close browser"""
